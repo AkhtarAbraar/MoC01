@@ -61,6 +61,14 @@ class MovieCatalogScreen extends StatelessWidget {
       imageUrl:
           'https://m.media-amazon.com/images/M/MV5BYjdmOTI5ZmQtOTBiOS00YmIwLWJjMDMtMWQ5MDk3YTQyYTI5XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg',
     ),
+    Movie(
+      title: 'The Nun',
+      genre: 'Horror',
+      year: 2018,
+      rating: 5.3,
+      imageUrl:
+          'https://m.media-amazon.com/images/M/MV5BMjM3NzQ5NDcxOF5BMl5BanBnXkFtZTgwNzM4MTQ5NTM@._V1_.jpg',
+    ),
   ];
 
   MovieCatalogScreen({super.key});
@@ -69,8 +77,10 @@ class MovieCatalogScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Movie Catalog')),
-      body: Column(
-        children: movies.map((movie) {
+      body: ListView.builder(
+        itemCount: movies.length,
+        itemBuilder: (context, index) {
+          final movie = movies[index];
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             clipBehavior: Clip.hardEdge,
@@ -139,7 +149,7 @@ class MovieCatalogScreen extends StatelessWidget {
               ],
             ),
           );
-        }).toList(),
+        },
       ),
     );
   }
