@@ -1,25 +1,14 @@
 import 'package:flutter/material.dart';
+import '../../../models/movie.dart';
 
 class MovieCard extends StatelessWidget {
-  final String title;
-  final String genre;
-  final String desc;
-  final String releaseDate;
-  final String rating;
-  final String imageUrl;
-  final bool isFavorite; // <-- Added to track state
-  final VoidCallback onFavoriteToggle; // <-- Added to handle taps
+  final Movie movie;
+  final VoidCallback onFavoriteToggle;
 
   const MovieCard({
     super.key,
-    required this.title,
-    required this.genre,
-    required this.desc,
-    required this.releaseDate,
-    required this.rating,
-    required this.imageUrl,
-    required this.isFavorite, // <-- Required parameter
-    required this.onFavoriteToggle, // <-- Required parameter
+    required this.movie,
+    required this.onFavoriteToggle,
   });
 
   @override
@@ -34,7 +23,7 @@ class MovieCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Image.network(
-            imageUrl,
+            movie.imageUrl,
             width: 110,
             height: 160,
             fit: BoxFit.cover,
@@ -59,7 +48,7 @@ class MovieCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            title,
+                            movie.title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -69,23 +58,21 @@ class MovieCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        // The interactive Heart Button
+                        // Button Favorite yang memicu BLoC Event
                         IconButton(
                           icon: Icon(
-                            isFavorite ? Icons.favorite : Icons.favorite_border,
-                            color: isFavorite ? Colors.red : Colors.grey,
+                            movie.isFavorite ? Icons.favorite : Icons.favorite_border,
+                            color: movie.isFavorite ? Colors.red : Colors.grey,
                           ),
-                          onPressed:
-                              onFavoriteToggle, // Triggers the function from home.dart
+                          onPressed: onFavoriteToggle,
                           padding: EdgeInsets.zero,
-                          constraints:
-                              const BoxConstraints(), // Keeps the button compact
+                          constraints: const BoxConstraints(),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$releaseDate • $genre',
+                      '${movie.year} • ${movie.genre}',
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[600],
@@ -98,7 +85,7 @@ class MovieCard extends StatelessWidget {
                         const Icon(Icons.star, color: Colors.amber, size: 16),
                         const SizedBox(width: 4),
                         Text(
-                          rating,
+                          movie.rating,
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
@@ -108,7 +95,7 @@ class MovieCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      desc,
+                      movie.desc,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 12, color: Colors.grey[700]),
