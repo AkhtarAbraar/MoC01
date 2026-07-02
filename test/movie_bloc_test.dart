@@ -1,49 +1,89 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/bloc/movie_bloc.dart';
+import 'package:flutter_application_1/bloc/favorite_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  group('MovieBloc Unit Tests', () {
+  group('MovieBloc Unit Tests (flutter_bloc)', () {
     late MovieBloc movieBloc;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({
+        'cached_movies': jsonEncode([
+          {
+            'id': '1',
+            'title': 'Mock Movie 1',
+            'genre': 'Action',
+            'desc': 'A great mock movie',
+            'year': '2024',
+            'rating': '8.5',
+            'imageUrl': 'https://example.com/image.jpg',
+            'isFavorite': false
+          }
+        ])
+      });
       movieBloc = MovieBloc();
     });
 
     tearDown(() {
-      movieBloc.dispose();
+      movieBloc.close();
     });
 
-    test('Initial fetch emits MovieLoadingState then MovieLoadedState', () async {
-      // Menguji urutan state yang dipancarkan stream saat inisialisasi
-      expectLater(
-        movieBloc.stateStream,
+    test('Initial state is MovieLoadingState', () {
+      expect(movieBloc.state, isA<MovieLoadingState>());
+    });
+
+    test('Initial fetch eventually emits MovieLoadedState', () async {
+      await expectLater(
+        movieBloc.stream,
+        emitsThrough(isA<MovieLoadedState>()),
+      );
+    });
+  });
+
+  group('FavoriteBloc Unit Tests', () {
+    late FavoriteBloc favoriteBloc;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({
+        'favorite_movie_ids': ['1', '2']
+      });
+      favoriteBloc = FavoriteBloc();
+    });
+
+    tearDown(() {
+      favoriteBloc.close();
+    });
+
+    test('Initial state is FavoritesLoadingState', () {
+      expect(favoriteBloc.state, isA<FavoritesLoadingState>());
+    });
+
+    test('LoadFavoritesEvent emits FavoritesLoadedState with cached IDs', () async {
+      favoriteBloc.add(LoadFavoritesEvent());
+      await expectLater(
+        favoriteBloc.stream,
         emitsInOrder([
-          isA<MovieLoadingState>(),
-          isA<MovieLoadedState>(),
+          isA<FavoritesLoadingState>(),
+          isA<FavoritesLoadedState>().having((state) => state.favoriteIds, 'favoriteIds', ['1', '2']),
         ]),
       );
     });
 
-    test('ToggleFavoriteEvent updates movie isFavorite status', () async {
-      // Tunggu sampai data awal selesai dimuat (MovieLoadedState)
-      await expectLater(
-        movieBloc.stateStream,
-        emitsThrough(isA<MovieLoadedState>()),
-      );
+    test('ToggleFavoriteEvent adds/removes favorite IDs', () async {
+      favoriteBloc.add(LoadFavoritesEvent());
+      await favoriteBloc.stream.firstWhere((state) => state is FavoritesLoadedState);
 
-      // Pastikan film pertama awalnya isFavorite == false
-      final initialMovies = movieBloc.currentMovies;
-      expect(initialMovies.isNotEmpty, true);
-      final firstMovieId = initialMovies.first.id;
-      expect(initialMovies.first.isFavorite, false);
+      // Tambahkan ID '3'
+      favoriteBloc.add(ToggleFavoriteEvent('3'));
+      var state = await favoriteBloc.stream.firstWhere((s) => s is FavoritesLoadedState) as FavoritesLoadedState;
+      expect(state.favoriteIds, contains('3'));
 
-      // Memicu ToggleFavoriteEvent untuk film pertama
-      movieBloc.eventSink.add(ToggleFavoriteEvent(firstMovieId));
-
-      // Memverifikasi state terbaru memiliki isFavorite == true
-      final newState = await movieBloc.stateStream.firstWhere((state) => state is MovieLoadedState) as MovieLoadedState;
-      final updatedMovie = newState.movies.firstWhere((m) => m.id == firstMovieId);
-      expect(updatedMovie.isFavorite, true);
+      // Hapus ID '1'
+      favoriteBloc.add(ToggleFavoriteEvent('1'));
+      state = await favoriteBloc.stream.firstWhere((s) => s is FavoritesLoadedState) as FavoritesLoadedState;
+      expect(state.favoriteIds, isNot(contains('1')));
     });
   });
 }

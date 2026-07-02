@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../models/movie.dart';
 
+/// A reusable UI card component that displays a summary of a single movie.
 class MovieCard extends StatelessWidget {
   final Movie movie;
+  final bool isFavorite;
   final VoidCallback onFavoriteToggle;
 
+  /// Constructor for MovieCard.
   const MovieCard({
     super.key,
     required this.movie,
+    required this.isFavorite,
     required this.onFavoriteToggle,
   });
 
@@ -42,7 +46,6 @@ class MovieCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ROW: Title and Favorite Button
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -58,11 +61,10 @@ class MovieCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        // Button Favorite yang memicu BLoC Event
                         IconButton(
                           icon: Icon(
-                            movie.isFavorite ? Icons.favorite : Icons.favorite_border,
-                            color: movie.isFavorite ? Colors.red : Colors.grey,
+                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                            color: isFavorite ? Colors.red : Colors.grey,
                           ),
                           onPressed: onFavoriteToggle,
                           padding: EdgeInsets.zero,
@@ -73,6 +75,8 @@ class MovieCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '${movie.year} • ${movie.genre}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[600],

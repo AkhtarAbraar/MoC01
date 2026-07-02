@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/movie_bloc.dart';
+import '../../bloc/favorite_bloc.dart';
+import '../../models/movie.dart';
 import '../widgets/movie_card.dart';
 import 'movie_details.dart';
 
+/// A screen displaying only the movies that the user has marked as favorite.
 class FavoritesScreen extends StatelessWidget {
-  final MovieBloc movieBloc;
-
-  const FavoritesScreen({super.key, required this.movieBloc});
+  
+  /// Constructor for FavoritesScreen.
+  const FavoritesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -16,63 +20,67 @@ class FavoritesScreen extends StatelessWidget {
         backgroundColor: Colors.redAccent,
         foregroundColor: Colors.white,
       ),
-      // Menggunakan StreamBuilder dengan initialData dari movieBloc.currentMovies
-      // Sehingga data favorit langsung tampil dan tetap reaktif jika di-unfavorite
-      body: StreamBuilder<MovieState>(
-        initialData: MovieLoadedState(movieBloc.currentMovies),
-        stream: movieBloc.stateStream,
-        builder: (context, snapshot) {
-          final state = snapshot.data;
-
-          if (state is MovieLoadedState) {
-            // Filter hanya film yang memiliki isFavorite == true
-            final favoriteMovies = state.movies.where((m) => m.isFavorite).toList();
-
-            if (favoriteMovies.isEmpty) {
-              return const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.favorite_border, size: 64, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text(
-                      'Belum ada film favorit.',
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ListView.builder(
-                itemCount: favoriteMovies.length,
-                itemBuilder: (context, index) {
-                  final movie = favoriteMovies[index];
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MovieDetail(movie: movie),
-                        ),
-                      );
-                    },
-                    child: MovieCard(
-                      movie: movie,
-                      onFavoriteToggle: () {
-                        // Mengirim event toggle ke BLoC untuk membatalkan favorit
-                        movieBloc.eventSink.add(ToggleFavoriteEvent(movie.id));
-                      },
-                    ),
-                  );
-                },
-              ),
-            );
+      body: BlocBuilder<MovieBloc, MovieState>(
+        builder: (context, movieState) {
+          // Ambil daftar seluruh film dari MovieBloc
+          List<Movie> allMovies = [];
+          if (movieState is MovieLoadedState) {
+            allMovies = movieState.movies;
+          } else {
+            allMovies = context.read<MovieBloc>().currentMovies;
           }
 
-          return const Center(child: Text('Memuat...'));
+          return BlocBuilder<FavoriteBloc, FavoriteState>(
+            builder: (context, favState) {
+              final List<String> favoriteIds = favState is FavoritesLoadedState ? favState.favoriteIds : [];
+              
+              // Filter film berdasarkan ID favorit terdaftar
+              final favoriteMovies = allMovies.where((m) => favoriteIds.contains(m.id)).toList();
+
+              if (favoriteMovies.isEmpty) {
+                return const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.favorite_border, size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text(
+                        'Belum ada film favorit.',
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ListView.builder(
+                  itemCount: favoriteMovies.length,
+                  itemBuilder: (context, index) {
+                    final movie = favoriteMovies[index];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MovieDetail(movie: movie),
+                          ),
+                        );
+                      },
+                      child: MovieCard(
+                        movie: movie,
+                        isFavorite: true,
+                        onFavoriteToggle: () {
+                          context.read<FavoriteBloc>().add(ToggleFavoriteEvent(movie.id));
+                        },
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          );
         },
       ),
     );
